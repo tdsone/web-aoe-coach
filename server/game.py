@@ -35,7 +35,8 @@ class Game:
         self.raw = parsed_game
         self._gaia_layer: Optional[Layer] = None
         self._buildings_layer: Optional[Layer] = None
-        self.map_size = 125 # Default map size
+        # Extract map size from parsed data, default to 120
+        self.map_size = parsed_game.get('map', {}).get('dimension', 120)
 
     def get_gaia(self, t: float) -> Layer:
         """

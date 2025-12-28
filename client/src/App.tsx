@@ -7,6 +7,7 @@ type ViewMode = 'upload' | 'map'
 function App() {
   const [gameId, setGameId] = useState<string | null>(null)
   const [gaiaItems, setGaiaItems] = useState<GaiaItem[]>([])
+  const [mapSize, setMapSize] = useState<number>(120)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -51,11 +52,12 @@ function App() {
         throw new Error(data.error || 'Failed to parse replay')
       }
 
-      // The parse endpoint now returns game state, get the game ID from the response
-      // For now, we need to extract it - let's update the server to return it
-      // Assuming the response contains the game id
+      // The parse endpoint returns game id and map size
       if (data.id) {
         setGameId(data.id)
+        if (data.mapSize) {
+          setMapSize(data.mapSize)
+        }
         await fetchGaiaLayer(data.id, 0)
         setViewMode('map')
       }
@@ -95,6 +97,7 @@ function App() {
   const handleReset = () => {
     setGameId(null)
     setGaiaItems([])
+    setMapSize(120)
     setFileName(null)
     setError(null)
     setViewMode('upload')
@@ -109,12 +112,12 @@ function App() {
 
       // Generate trees in clusters
       for (let cluster = 0; cluster < 8; cluster++) {
-        const cx = Math.random() * 180 + 10
-        const cy = Math.random() * 180 + 10
+        const cx = Math.random() * 110 + 5
+        const cy = Math.random() * 110 + 5
         for (let i = 0; i < 15; i++) {
           demoItems.push({
-            x: cx + (Math.random() - 0.5) * 20,
-            y: cy + (Math.random() - 0.5) * 20,
+            x: cx + (Math.random() - 0.5) * 10,
+            y: cy + (Math.random() - 0.5) * 10,
             name: 'Tree (Oak Forest)',
           })
         }
@@ -122,8 +125,8 @@ function App() {
 
       // Add gold mines
       for (let i = 0; i < 8; i++) {
-        const x = Math.random() * 180 + 10
-        const y = Math.random() * 180 + 10
+        const x = Math.random() * 110 + 5
+        const y = Math.random() * 110 + 5
         for (let j = 0; j < 4; j++) {
           demoItems.push({
             x: x + (Math.random() - 0.5) * 4,
@@ -135,8 +138,8 @@ function App() {
 
       // Add stone mines
       for (let i = 0; i < 6; i++) {
-        const x = Math.random() * 180 + 10
-        const y = Math.random() * 180 + 10
+        const x = Math.random() * 110 + 5
+        const y = Math.random() * 110 + 5
         for (let j = 0; j < 4; j++) {
           demoItems.push({
             x: x + (Math.random() - 0.5) * 4,
@@ -149,16 +152,16 @@ function App() {
       // Add sheep
       for (let i = 0; i < 8; i++) {
         demoItems.push({
-          x: Math.random() * 180 + 10,
-          y: Math.random() * 180 + 10,
+          x: Math.random() * 110 + 5,
+          y: Math.random() * 110 + 5,
           name: 'Sheep',
         })
       }
 
       // Add deer
       for (let i = 0; i < 4; i++) {
-        const x = Math.random() * 160 + 20
-        const y = Math.random() * 160 + 20
+        const x = Math.random() * 100 + 10
+        const y = Math.random() * 100 + 10
         for (let j = 0; j < 4; j++) {
           demoItems.push({
             x: x + (Math.random() - 0.5) * 8,
@@ -171,16 +174,16 @@ function App() {
       // Add boars
       for (let i = 0; i < 4; i++) {
         demoItems.push({
-          x: Math.random() * 180 + 10,
-          y: Math.random() * 180 + 10,
+          x: Math.random() * 110 + 5,
+          y: Math.random() * 110 + 5,
           name: 'Wild Boar',
         })
       }
 
       // Add berries
       for (let i = 0; i < 4; i++) {
-        const x = Math.random() * 180 + 10
-        const y = Math.random() * 180 + 10
+        const x = Math.random() * 110 + 5
+        const y = Math.random() * 110 + 5
         for (let j = 0; j < 6; j++) {
           demoItems.push({
             x: x + (Math.random() - 0.5) * 6,
@@ -193,8 +196,8 @@ function App() {
       // Add relics
       for (let i = 0; i < 5; i++) {
         demoItems.push({
-          x: Math.random() * 180 + 10,
-          y: Math.random() * 180 + 10,
+          x: Math.random() * 110 + 5,
+          y: Math.random() * 110 + 5,
           name: 'Relic',
         })
       }
@@ -233,7 +236,8 @@ function App() {
         {/* Map container */}
         <div className="flex-1 relative">
           <GameMap
-            mapSize={200}
+            gaiaItems={gaiaItems}
+            mapSize={mapSize}
             className="w-full h-full"
           />
         </div>
