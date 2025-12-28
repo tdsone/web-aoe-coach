@@ -30,11 +30,12 @@ class Layer:
 
 
 class Game:
-
     def __init__(self, id, parsed_game) -> None:
         self.id = id # globaly unique uuid str
         self.raw = parsed_game
         self._gaia_layer: Optional[Layer] = None
+        self._buildings_layer: Optional[Layer] = None
+        self.map_size = 125 # Default map size
 
     def get_gaia(self, t: float) -> Layer:
         """
@@ -46,6 +47,15 @@ class Game:
             self._gaia_layer.prepare(self.raw.get('gaia', []))
 
         return self._gaia_layer
+
+    def get_buildings(self, t: float) -> Layer:
+        """
+        t: seconds since beginning of game
+        """
+        from layers.layer_buildings import BuildingLayer
+        layer = BuildingLayer()
+        layer.prepare(self.raw, t)
+        return layer
 
     def get_game_state_json(self, t: Optional[float]) -> str:
         """

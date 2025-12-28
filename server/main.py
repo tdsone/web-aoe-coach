@@ -99,6 +99,19 @@ async def get_gaia_layer(id: str, t: float = 0):
     return JSONResponse(content=[item.to_dict() for item in gaia_layer.items])
 
 
+@app.get("/layers/buildings")
+async def get_buildings_layer(id: str, t: float = 0):
+    if id not in games:
+        return JSONResponse(
+            content={"error": "Game not found"},
+            status_code=404
+        )
+    
+    game: Game = games[id]
+    buildings_layer = game.get_buildings(t)
+    return JSONResponse(content=[item.to_dict() for item in buildings_layer.items])
+
+
 if __name__ == "__main__":
     import uvicorn
 

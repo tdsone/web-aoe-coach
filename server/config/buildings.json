@@ -1,0 +1,22 @@
+{
+  "defaults": {
+    "show": true,
+    "shape": 4,
+    "size": 3,
+    "icon": "",
+    "icon_size": 0.02,
+    "outline_shape": 22,
+    "outline_size": 5,
+    "outline_stroke": 1.2
+  },
+  "items": [
+    { "building": "House", "show": true, "icon": "assets/icons/house.png" },
+    { "building": "Lumber Camp", "show": true, "icon": "assets/icons/lumber_camp.png" },
+    { "building": "Mill", "show": true, "icon": "assets/icons/mill.png" },
+    { "building": "Farm", "show": true, "icon": "assets/icons/farm.png" },
+    { "building": "Barracks", "show": true, "icon": "assets/icons/barracks.png" },
+    { "building": "Mining Camp", "show": true, "icon": "assets/icons/mining_camp.png" },
+    { "building": "Blacksmith", "show": true, "icon": "assets/icons/blacksmith.png" },
+    { "building": "Town Center", "show": true, "icon": "assets/icons/town_center.png" }
+  ]
+}
