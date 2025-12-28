@@ -64,7 +64,8 @@ async def parse_replay(file: UploadFile = File(...)):
             print(f"Currently {len(games.keys())} in global:")
             print(list(games.keys()))
 
-            return JSONResponse(content=game.get_game_state_json(t=0))
+            # Return game ID along with initial state
+            return JSONResponse(content={"id": game_id, "state": game.get_game_state_json(t=0)})
         finally:
             # Clean up the temporary file
             os.unlink(tmp_path)
