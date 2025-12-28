@@ -1,6 +1,6 @@
 {
   "defaults": {
-    "show": true,
+    "show": false,
     "color": "#000000"
   },
   "items": [
@@ -56,6 +56,31 @@
     },
     {
       "name": "Forage Bush",
+      "show": true,
+      "color": "#2E7D32"
+    },
+    {
+      "name": "Goose",
+      "show": true,
+      "color": "#FFFFFF"
+    },
+    {
+      "name": "Javelina",
+      "show": true,
+      "color": "#7A1F1F"
+    },
+    {
+      "name": "Tree (Jungle)",
+      "show": true,
+      "color": "#2E7D32"
+    },
+    {
+      "name": "Tree (Rainforest)",
+      "show": true,
+      "color": "#2E7D32"
+    },
+    {
+      "name": "Tree (Reeds)",
       "show": true,
       "color": "#2E7D32"
     },

@@ -5,9 +5,9 @@ if TYPE_CHECKING:
 
 class Item:
 
-    def __init__(self, x: int, y: int, type: str, name: str) -> None:
-        self.x: int = x
-        self.y: int = y
+    def __init__(self, x: float, y: float, type: str, name: str) -> None:
+        self.x: float = x
+        self.y: float = y
         self.type: str = type
         self.name: str = name
 
@@ -34,7 +34,7 @@ class Game:
     def __init__(self, id, parsed_game) -> None:
         self.id = id # globaly unique uuid str
         self.raw = parsed_game
-        self._gaia_layer: Optional['GaiaLayer'] = None
+        self._gaia_layer: Optional[Layer] = None
 
     def get_gaia(self, t: float) -> Layer:
         """
@@ -54,6 +54,6 @@ class Game:
         return "{}"
 
     @classmethod
-    def create_game_from_record(cls, id: str, parsed_data): 
+    def create_game_from_record(cls, id: str, parsed_data):
         return Game(id=id, parsed_game=parsed_data)
 
