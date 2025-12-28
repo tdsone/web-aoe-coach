@@ -69,6 +69,18 @@ async def parse_replay(file: UploadFile = File(...)):
             status_code=500
         )
 
+@app.get("/game/{id}")
+async def get_game_state(id: str, t: float):
+    if id not in games:
+        return JSONResponse(
+            content={"error": "Game not found"},
+            status_code=404
+        )
+    
+    game = games[id]
+    state = game.get_game_state_json(t)
+    return JSONResponse(content=state)
+
 
 if __name__ == "__main__":
     import uvicorn

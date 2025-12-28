@@ -11,8 +11,15 @@ class Layer:
         self.type = type
         self.items :list[Item] = []
 
-    def make_items() -> None: 
+    def make_items(self) -> None: 
         raise NotImplementedError
+
+    def to_json(self) -> str:
+        """
+        Takes a layer object and converts it to json
+        """
+        raise NotImplementedError
+        
         
 
 class Game:
@@ -26,6 +33,12 @@ class Game:
         t: seconds since beginning of game
         """
         return Layer('gaia')
+
+    def get_game_state_json(self, t: float) -> str:
+        """
+        Gets game state at timepoint t (seconds since start)
+        """
+        return "{}"
 
     @classmethod
     def create_game_from_record(cls, parsed_data): 
