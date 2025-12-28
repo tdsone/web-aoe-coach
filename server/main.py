@@ -6,6 +6,7 @@ import os
 import uuid
 
 from mgz.model import parse_match, serialize
+from game import Game
 
 app = FastAPI(title="AoE2 Replay Parser API", version="1.0.0")
 
@@ -55,7 +56,7 @@ async def parse_replay(file: UploadFile = File(...)):
             
             # Generate a new UUID and store the parsed data
             game_id = str(uuid.uuid4())
-            games[game_id] = parsed_data
+            games[game_id] = Game.create_game_from_record(parsed_data)
             
             return JSONResponse(content={"game_id": game_id})
         finally:
