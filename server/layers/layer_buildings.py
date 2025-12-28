@@ -21,11 +21,7 @@ class BuildingItem(Item):
         return {
             "x": self.x,
             "y": self.y,
-            "name": self.name,
-            "player": self.player,
-            "timestamp": self.timestamp,
-            "icon": self.icon,
-            "icon_size": self.icon_size
+            "name": self.name
         }
 
 class BuildingLayer(Layer):
