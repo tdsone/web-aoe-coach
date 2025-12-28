@@ -1,0 +1,118 @@
+{
+  "defaults": {
+    "show": true,
+    "color": "#000000"
+  },
+  "items": [
+    {
+      "name": "Gold Mine",
+      "show": true,
+      "color": "#FFD700"
+    },
+    {
+      "name": "unknown",
+      "show": false,
+      "color": "#000000"
+    },
+    {
+      "name": "Stone Mine",
+      "show": true,
+      "color": "#9AA0A6"
+    },
+    {
+      "name": "Tree (Oak Forest)",
+      "show": true,
+      "color": "#2E7D32"
+    },
+    {
+      "name": "Tree (Oak Autumn)",
+      "show": true,
+      "color": "#2E7D32"
+    },
+    {
+      "name": "Tree (Bamboo Forest)",
+      "show": true,
+      "color": "#2E7D32"
+    },
+    {
+      "name": "Sheep",
+      "show": true,
+      "color": "#FFFFFF"
+    },
+    {
+      "name": "Deer",
+      "show": true,
+      "color": "#8B5A2B"
+    },
+    {
+      "name": "Wild Boar",
+      "show": true,
+      "color": "#7A1F1F"
+    },
+    {
+      "name": "Relic",
+      "show": true,
+      "color": "#00E5FF"
+    },
+    {
+      "name": "Forage Bush",
+      "show": true,
+      "color": "#2E7D32"
+    },
+    {
+      "name": "Bush A",
+      "show": false,
+      "color": "#2E7D32"
+    },
+    {
+      "name": "Bush B",
+      "show": false,
+      "color": "#2E7D32"
+    },
+    {
+      "name": "Grass, Dry",
+      "show": false,
+      "color": "#BDBDBD"
+    },
+    {
+      "name": "Plant (Bush, Green)",
+      "show": false,
+      "color": "#BDBDBD"
+    },
+    {
+      "name": "Plant (Dead)",
+      "show": false,
+      "color": "#BDBDBD"
+    },
+    {
+      "name": "Plant (Flowers)",
+      "show": false,
+      "color": "#BDBDBD"
+    },
+    {
+      "name": "Plant (Shrub, Green)",
+      "show": false,
+      "color": "#BDBDBD"
+    },
+    {
+      "name": "Flower Bed",
+      "show": false,
+      "color": "#BDBDBD"
+    },
+    {
+      "name": "Rock 1",
+      "show": false,
+      "color": "#BDBDBD"
+    },
+    {
+      "name": "Stork",
+      "show": false,
+      "color": "#BDBDBD"
+    },
+    {
+      "name": "unknown",
+      "show": false,
+      "color": "#BDBDBD"
+    }
+  ]
+}

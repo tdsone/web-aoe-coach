@@ -1,17 +1,24 @@
-from typing import Literal, Optional
+from typing import Literal, List, Optional, TYPE_CHECKING
 
-class Item: 
+if TYPE_CHECKING:
+    from layers.layer_gaia import GaiaLayer
 
-    def __init__(self) -> None:
-        pass
+class Item:
+
+    def __init__(self, x: int, y: int, type: str, name: str) -> None:
+        self.x: int = x
+        self.y: int = y
+        self.type: str = type
+        self.name: str = name
+
 
 class Layer:
 
     def __init__(self, type: Literal['gaia']) -> None:
         self.type = type
-        self.items :list[Item] = []
+        self.items: List[Item] = []
 
-    def make_items(self) -> None: 
+    def make_items(self) -> None:
         raise NotImplementedError
 
     def to_json(self) -> str:
@@ -19,21 +26,26 @@ class Layer:
         Takes a layer object and converts it to json
         """
         raise NotImplementedError
-        
-        
+
+
 
 class Game:
 
     def __init__(self, id, parsed_game) -> None:
         self.id = id # globaly unique uuid str
         self.raw = parsed_game
-        pass
+        self._gaia_layer: Optional['GaiaLayer'] = None
 
     def get_gaia(self, t: float) -> Layer:
         """
         t: seconds since beginning of game
         """
-        return Layer('gaia')
+        if self._gaia_layer is None:
+            from layers.layer_gaia import GaiaLayer
+            self._gaia_layer = GaiaLayer()
+            self._gaia_layer.prepare(self.raw.get('gaia', []))
+
+        return self._gaia_layer
 
     def get_game_state_json(self, t: Optional[float]) -> str:
         """
