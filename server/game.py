@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 
 class Item: 
 
@@ -24,7 +24,8 @@ class Layer:
 
 class Game:
 
-    def __init__(self, parsed_game) -> None:
+    def __init__(self, id, parsed_game) -> None:
+        self.id = id # globaly unique uuid str
         self.raw = parsed_game
         pass
 
@@ -34,13 +35,13 @@ class Game:
         """
         return Layer('gaia')
 
-    def get_game_state_json(self, t: float) -> str:
+    def get_game_state_json(self, t: Optional[float]) -> str:
         """
         Gets game state at timepoint t (seconds since start)
         """
         return "{}"
 
     @classmethod
-    def create_game_from_record(cls, parsed_data): 
-        return Game(parsed_game=parsed_data)
+    def create_game_from_record(cls, id: str, parsed_data): 
+        return Game(id=id, parsed_game=parsed_data)
 
