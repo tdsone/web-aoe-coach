@@ -1,0 +1,16 @@
+[project]
+name = "nehack25"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "ipykernel>=7.1.0",
+    "matplotlib>=3.10.8",
+    "mgz>=1.8.44",
+    "nbformat>=5.10.4",
+    "pandas>=2.3.3",
+    "plotly>=6.5.0",
+    "uvicorn>=0.34.0",
+]

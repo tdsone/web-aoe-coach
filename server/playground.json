@@ -1,0 +1,37 @@
+{
+    {
+        "timestamp": "0:00:04.781000",
+        "type": "Build",
+        "param": "House",
+        "payload": {
+            "building_id": 70,
+            "object_ids": [
+                3562
+            ],
+            "sequence": 4781,
+            "building": "House"
+        },
+        "player": 2,
+        "position": {
+            "x": 29.0,
+            "y": 53.0
+        }
+    },
+    {
+        "timestamp": "0:00:04.781000",
+        "type": "BUILD",
+        "payload": {
+            "building_id": 70,
+            "object_ids": [
+                3562
+            ],
+            "sequence": 4781,
+            "building": "House"
+        },
+        "player": 2,
+        "position": {
+            "x": 29.0,
+            "y": 53.0
+        }
+    },
+}
