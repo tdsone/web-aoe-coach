@@ -117,7 +117,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: system-ui, -apple-system, sans-serif;
   }
+}
+
+.font-serif {
+  font-family: 'Cinzel', serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
 }
