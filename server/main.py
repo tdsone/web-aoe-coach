@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import tempfile
 import os
+import uuid
 
 from mgz.model import parse_match, serialize
 
@@ -17,6 +18,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Global dictionary mapping game id to game object (to be implemented)
+games = {}
 
 @app.get("/")
 async def root():
@@ -50,7 +53,11 @@ async def parse_replay(file: UploadFile = File(...)):
                 match = parse_match(f)
                 parsed_data = serialize(match)
             
-            return JSONResponse(content=parsed_data)
+            # Generate a new UUID and store the parsed data
+            game_id = str(uuid.uuid4())
+            games[game_id] = parsed_data
+            
+            return JSONResponse(content={"game_id": game_id})
         finally:
             # Clean up the temporary file
             os.unlink(tmp_path)
