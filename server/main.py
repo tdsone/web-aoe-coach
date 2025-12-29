@@ -115,6 +115,15 @@ async def get_game_statistics(id: str):
     return JSONResponse(content=game.statistics)
 
 
+@app.get("/game/{id}/metadata")
+async def get_game_metadata(id: str):
+    if id not in games:
+        return JSONResponse(content={"error": "Game not found"}, status_code=404)
+
+    game: Game = games[id]
+    return JSONResponse(content=game.get_metadata())
+
+
 @app.get("/layers/gaia")
 async def get_gaia_layer(id: str, t: float = 0):
     if id not in games:

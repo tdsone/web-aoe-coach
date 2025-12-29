@@ -85,6 +85,10 @@ const CIVILIZATION_MAP: Record<number, string> = {
 const getCivilizationName = (civilizationID: number): string => {
   return CIVILIZATION_MAP[civilizationID] || `Unknown (${civilizationID})`
 }
+import { StatsChart } from './components/StatsChart'
+import type { GaiaItem, BuildingItem, GaiaConfig, BuildingConfig, GameStatistics } from './types/game'
+
+type ViewMode = 'upload' | 'map'
 
 function App() {
   const [gameId, setGameId] = useState<string | null>(null)
@@ -101,6 +105,8 @@ function App() {
   const [gaiaConfig, setGaiaConfig] = useState<GaiaConfig | null>(null)
   const [buildingConfig, setBuildingConfig] = useState<BuildingConfig | null>(null)
   const [configLoading, setConfigLoading] = useState(true)
+  const [statistics, setStatistics] = useState<GameStatistics>([])
+  const [statsLoading, setStatsLoading] = useState(false)
   const [inputMode, setInputMode] = useState<InputMode>('upload')
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -168,6 +174,25 @@ function App() {
     } catch (err) {
       console.error('Error fetching buildings layer:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch buildings layer')
+    }
+  }, [])
+
+  const fetchStatistics = useCallback(async (id: string) => {
+    setStatsLoading(true)
+    try {
+      const response = await fetch(`http://localhost:8000/game/${id}/statistics`)
+      if (!response.ok) {
+        // Statistics might not be ready yet (computed in background)
+        console.log('Statistics not ready yet')
+        return
+      }
+      const data = await response.json()
+      setStatistics(data)
+    } catch (err) {
+      console.error('Error fetching statistics:', err)
+      // Don't show error for statistics - they're optional
+    } finally {
+      setStatsLoading(false)
     }
   }, [])
 
@@ -287,6 +312,9 @@ function App() {
           fetchBuildingsLayer(data.id, 0),
         ])
         setViewMode('map')
+
+        // Fetch statistics after a short delay (computed in background)
+        setTimeout(() => fetchStatistics(data.id), 1000)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -401,6 +429,7 @@ function App() {
     setMapSize(120)
     setGameDuration(0)
     setCurrentTime(0)
+    setStatistics([])
     setFileName(null)
     setError(null)
     setViewMode('select')
@@ -563,77 +592,94 @@ function App() {
           </button>
         </div>
 
-        {/* Map container */}
-        <div className="flex-1 relative">
-          <GameMap
-            gaiaItems={gaiaItems}
-            buildings={buildings}
-            gaiaConfig={gaiaConfig}
-            buildingConfig={buildingConfig}
-            mapSize={mapSize}
-            className="w-full h-full"
-          />
-        </div>
+        {/* Main content area - split layout */}
+        <div className="flex-1 flex min-h-0">
+          {/* Left half - Time slider and chart */}
+          <div className="w-1/2 flex flex-col border-r border-stone-700/50">
+            {/* Time slider section */}
+            <div className="p-6 bg-stone-900/50 border-b border-stone-700/50">
+              <h2 className="font-serif text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 mb-4">
+                Timeline
+              </h2>
+              {gameDuration > 0 && (
+                <div className="space-y-4">
+                  {/* Time display */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl font-mono font-bold text-amber-300">
+                        {formatTime(currentTime)}
+                      </span>
+                      {isTimeLoading && (
+                        <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                      )}
+                    </div>
+                    <span className="text-stone-400 font-mono">
+                      / {formatTime(gameDuration)}
+                    </span>
+                  </div>
 
-        {/* Time slider bar */}
-        {gameDuration > 0 && (
-          <div className="px-6 py-4 bg-stone-900/90 border-t border-amber-900/30 backdrop-blur-sm">
-            <div className="flex items-center gap-4">
-              {/* Current time display */}
-              <div className="flex items-center gap-2 min-w-[100px]">
-                <span className="text-amber-300 font-mono text-sm font-medium">
-                  {formatTime(currentTime)}
-                </span>
-                {isTimeLoading && (
-                  <div className="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                )}
-              </div>
+                  {/* Slider */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={gameDuration}
+                    step={1}
+                    value={currentTime}
+                    onChange={(e) => handleTimeChange(Number(e.target.value))}
+                    className="w-full h-3 bg-stone-700 rounded-lg appearance-none cursor-pointer
+                      [&::-webkit-slider-thumb]:appearance-none
+                      [&::-webkit-slider-thumb]:w-5
+                      [&::-webkit-slider-thumb]:h-5
+                      [&::-webkit-slider-thumb]:rounded-full
+                      [&::-webkit-slider-thumb]:bg-gradient-to-br
+                      [&::-webkit-slider-thumb]:from-amber-400
+                      [&::-webkit-slider-thumb]:to-amber-600
+                      [&::-webkit-slider-thumb]:shadow-lg
+                      [&::-webkit-slider-thumb]:shadow-amber-500/30
+                      [&::-webkit-slider-thumb]:border-2
+                      [&::-webkit-slider-thumb]:border-amber-300
+                      [&::-webkit-slider-thumb]:transition-transform
+                      [&::-webkit-slider-thumb]:hover:scale-110
+                      [&::-moz-range-thumb]:w-5
+                      [&::-moz-range-thumb]:h-5
+                      [&::-moz-range-thumb]:rounded-full
+                      [&::-moz-range-thumb]:bg-gradient-to-br
+                      [&::-moz-range-thumb]:from-amber-400
+                      [&::-moz-range-thumb]:to-amber-600
+                      [&::-moz-range-thumb]:border-2
+                      [&::-moz-range-thumb]:border-amber-300
+                      [&::-moz-range-thumb]:cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, rgb(251 191 36) 0%, rgb(251 191 36) ${(currentTime / gameDuration) * 100}%, rgb(68 64 60) ${(currentTime / gameDuration) * 100}%, rgb(68 64 60) 100%)`
+                    }}
+                  />
+                </div>
+              )}
+            </div>
 
-              {/* Slider */}
-              <div className="flex-1 relative group">
-                <input
-                  type="range"
-                  min={0}
-                  max={gameDuration}
-                  step={1}
-                  value={currentTime}
-                  onChange={(e) => handleTimeChange(Number(e.target.value))}
-                  className="w-full h-2 bg-stone-700 rounded-lg appearance-none cursor-pointer
-                    [&::-webkit-slider-thumb]:appearance-none
-                    [&::-webkit-slider-thumb]:w-4
-                    [&::-webkit-slider-thumb]:h-4
-                    [&::-webkit-slider-thumb]:rounded-full
-                    [&::-webkit-slider-thumb]:bg-gradient-to-br
-                    [&::-webkit-slider-thumb]:from-amber-400
-                    [&::-webkit-slider-thumb]:to-amber-600
-                    [&::-webkit-slider-thumb]:shadow-lg
-                    [&::-webkit-slider-thumb]:shadow-amber-500/30
-                    [&::-webkit-slider-thumb]:border-2
-                    [&::-webkit-slider-thumb]:border-amber-300
-                    [&::-webkit-slider-thumb]:transition-transform
-                    [&::-webkit-slider-thumb]:hover:scale-125
-                    [&::-moz-range-thumb]:w-4
-                    [&::-moz-range-thumb]:h-4
-                    [&::-moz-range-thumb]:rounded-full
-                    [&::-moz-range-thumb]:bg-gradient-to-br
-                    [&::-moz-range-thumb]:from-amber-400
-                    [&::-moz-range-thumb]:to-amber-600
-                    [&::-moz-range-thumb]:border-2
-                    [&::-moz-range-thumb]:border-amber-300
-                    [&::-moz-range-thumb]:cursor-pointer"
-                  style={{
-                    background: `linear-gradient(to right, rgb(251 191 36) 0%, rgb(251 191 36) ${(currentTime / gameDuration) * 100}%, rgb(68 64 60) ${(currentTime / gameDuration) * 100}%, rgb(68 64 60) 100%)`
-                  }}
-                />
-              </div>
-
-              {/* Total duration display */}
-              <span className="text-amber-200/60 font-mono text-sm min-w-[80px] text-right">
-                {formatTime(gameDuration)}
-              </span>
+            {/* Chart area - fills remaining space */}
+            <div className="flex-1 min-h-0">
+              <StatsChart
+                statistics={statistics}
+                currentTime={currentTime}
+                gameDuration={gameDuration || 1}
+                isLoading={statsLoading}
+              />
             </div>
           </div>
-        )}
+
+          {/* Right half - Game map */}
+          <div className="w-1/2 relative">
+            <GameMap
+              gaiaItems={gaiaItems}
+              buildings={buildings}
+              gaiaConfig={gaiaConfig}
+              buildingConfig={buildingConfig}
+              mapSize={mapSize}
+              className="w-full h-full"
+            />
+          </div>
+        </div>
       </div>
     )
   }
