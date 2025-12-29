@@ -6,6 +6,7 @@ interface StatsChartProps {
     currentTime: number
     gameDuration: number
     isLoading: boolean
+    ageUptimes?: Record<number, { age: string; time: number }[]>
 }
 
 type MetricKey = 'resource_count' | 'total_unit_count' | 'total_building_count' | 'scout_activity_in_window' | 'actions_in_window'
@@ -49,7 +50,22 @@ function formatCompact(v: number): string {
     return v.toFixed(1)
 }
 
-export function StatsChart({ statistics, currentTime, gameDuration, isLoading }: StatsChartProps) {
+// Age colors for vertical lines
+const AGE_COLORS: Record<string, string> = {
+    'DARK_AGE': '#78716c',      // Stone
+    'FEUDAL_AGE': '#22c55e',    // Green
+    'CASTLE_AGE': '#3b82f6',    // Blue
+    'IMPERIAL_AGE': '#eab308',  // Gold
+}
+
+const AGE_LABELS: Record<string, string> = {
+    'DARK_AGE': 'Dark',
+    'FEUDAL_AGE': 'Feudal',
+    'CASTLE_AGE': 'Castle',
+    'IMPERIAL_AGE': 'Imperial',
+}
+
+export function StatsChart({ statistics, currentTime, gameDuration, isLoading, ageUptimes }: StatsChartProps) {
     const [selectedMetric, setSelectedMetric] = useState<MetricKey>('resource_count')
     const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; time: number; value: number; player: string } | null>(null)
 
@@ -93,9 +109,9 @@ export function StatsChart({ statistics, currentTime, gameDuration, isLoading }:
     }, [statistics, selectedMetric])
 
     // Chart dimensions
-    const padding = { top: 20, right: 20, bottom: 40, left: 70 }
+    const padding = { top: 28, right: 20, bottom: 36, left: 70 }
     const svgWidth = 800
-    const svgHeight = 250
+    const svgHeight = 220
 
     // Convert data point to SVG coordinates
     const toSvgX = (time: number, svgWidth: number) => {
@@ -272,6 +288,40 @@ export function StatsChart({ statistics, currentTime, gameDuration, isLoading }:
                             </text>
                         ))}
                     </g>
+
+                    {/* Age uptime vertical lines */}
+                    {ageUptimes && Object.entries(ageUptimes).map(([playerId, ages]) => (
+                        ages.filter(a => a.age !== 'DARK_AGE').map((ageData, i) => {
+                            const x = toSvgX(ageData.time, svgWidth)
+                            const color = AGE_COLORS[ageData.age] || '#ffffff'
+                            const playerColor = PLAYER_COLORS[parseInt(playerId) - 1] || '#ffffff'
+                            return (
+                                <g key={`age-${playerId}-${i}`}>
+                                    <line
+                                        x1={x}
+                                        y1={padding.top}
+                                        x2={x}
+                                        y2={svgHeight - padding.bottom}
+                                        stroke={color}
+                                        strokeWidth={2}
+                                        strokeDasharray="6,4"
+                                        strokeOpacity={0.7}
+                                    />
+                                    {/* Age label at top */}
+                                    <text
+                                        x={x}
+                                        y={padding.top - 6}
+                                        textAnchor="middle"
+                                        fill={playerColor}
+                                        fontSize="9"
+                                        fontWeight="bold"
+                                    >
+                                        {AGE_LABELS[ageData.age] || ageData.age}
+                                    </text>
+                                </g>
+                            )
+                        })
+                    ))}
 
                     {/* Current time indicator */}
                     <line
