@@ -1,12 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { GameMap } from './components/GameMap'
-import type { GaiaItem } from './types/game'
+import type { GaiaItem, BuildingItem } from './types/game'
 
 type ViewMode = 'upload' | 'map'
 
 function App() {
   const [gameId, setGameId] = useState<string | null>(null)
   const [gaiaItems, setGaiaItems] = useState<GaiaItem[]>([])
+  const [buildings, setBuildings] = useState<BuildingItem[]>([])
   const [mapSize, setMapSize] = useState<number>(120)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,6 +25,18 @@ function App() {
     } catch (err) {
       console.error('Error fetching gaia layer:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch gaia layer')
+    }
+  }, [])
+
+  const fetchBuildingsLayer = useCallback(async (id: string, t: number = 0) => {
+    try {
+      const response = await fetch(`http://localhost:8000/layers/buildings?id=${id}&t=${t}`)
+      if (!response.ok) throw new Error('Failed to fetch buildings layer')
+      const data = await response.json()
+      setBuildings(data)
+    } catch (err) {
+      console.error('Error fetching buildings layer:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch buildings layer')
     }
   }, [])
 
@@ -58,7 +71,10 @@ function App() {
         if (data.mapSize) {
           setMapSize(data.mapSize)
         }
-        await fetchGaiaLayer(data.id, 0)
+        await Promise.all([
+          fetchGaiaLayer(data.id, 0),
+          fetchBuildingsLayer(data.id, 0),
+        ])
         setViewMode('map')
       }
     } catch (err) {
@@ -66,7 +82,7 @@ function App() {
     } finally {
       setIsLoading(false)
     }
-  }, [fetchGaiaLayer])
+  }, [fetchGaiaLayer, fetchBuildingsLayer])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -97,6 +113,7 @@ function App() {
   const handleReset = () => {
     setGameId(null)
     setGaiaItems([])
+    setBuildings([])
     setMapSize(120)
     setFileName(null)
     setError(null)
@@ -237,6 +254,7 @@ function App() {
         <div className="flex-1 relative">
           <GameMap
             gaiaItems={gaiaItems}
+            buildings={buildings}
             mapSize={mapSize}
             className="w-full h-full"
           />
