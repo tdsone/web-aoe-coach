@@ -9,6 +9,9 @@ function App() {
   const [gaiaItems, setGaiaItems] = useState<GaiaItem[]>([])
   const [buildings, setBuildings] = useState<BuildingItem[]>([])
   const [mapSize, setMapSize] = useState<number>(120)
+  const [gameDuration, setGameDuration] = useState<number>(0)
+  const [currentTime, setCurrentTime] = useState<number>(0)
+  const [isTimeLoading, setIsTimeLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -73,6 +76,35 @@ function App() {
     }
   }, [])
 
+  // Handle time change - refetch layers at new time
+  const handleTimeChange = useCallback(async (newTime: number) => {
+    if (!gameId) return
+
+    setCurrentTime(newTime)
+    setIsTimeLoading(true)
+
+    try {
+      await Promise.all([
+        fetchGaiaLayer(gameId, newTime),
+        fetchBuildingsLayer(gameId, newTime),
+      ])
+    } finally {
+      setIsTimeLoading(false)
+    }
+  }, [gameId, fetchGaiaLayer, fetchBuildingsLayer])
+
+  // Format seconds to mm:ss or h:mm:ss
+  const formatTime = (seconds: number): string => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = Math.floor(seconds % 60)
+
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
+
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.name.endsWith('.aoe2record')) {
       setError('Please upload a valid .aoe2record file')
@@ -98,12 +130,16 @@ function App() {
         throw new Error(data.error || 'Failed to parse replay')
       }
 
-      // The parse endpoint returns game id and map size
+      // The parse endpoint returns game id, map size, and duration
       if (data.id) {
         setGameId(data.id)
         if (data.mapSize) {
           setMapSize(data.mapSize)
         }
+        if (data.duration) {
+          setGameDuration(data.duration)
+        }
+        setCurrentTime(0)
         await Promise.all([
           fetchGaiaLayer(data.id, 0),
           fetchBuildingsLayer(data.id, 0),
@@ -148,6 +184,8 @@ function App() {
     setGaiaItems([])
     setBuildings([])
     setMapSize(120)
+    setGameDuration(0)
+    setCurrentTime(0)
     setFileName(null)
     setError(null)
     setViewMode('upload')
@@ -318,6 +356,66 @@ function App() {
             className="w-full h-full"
           />
         </div>
+
+        {/* Time slider bar */}
+        {gameDuration > 0 && (
+          <div className="px-6 py-4 bg-stone-900/90 border-t border-amber-900/30 backdrop-blur-sm">
+            <div className="flex items-center gap-4">
+              {/* Current time display */}
+              <div className="flex items-center gap-2 min-w-[100px]">
+                <span className="text-amber-300 font-mono text-sm font-medium">
+                  {formatTime(currentTime)}
+                </span>
+                {isTimeLoading && (
+                  <div className="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                )}
+              </div>
+
+              {/* Slider */}
+              <div className="flex-1 relative group">
+                <input
+                  type="range"
+                  min={0}
+                  max={gameDuration}
+                  step={1}
+                  value={currentTime}
+                  onChange={(e) => handleTimeChange(Number(e.target.value))}
+                  className="w-full h-2 bg-stone-700 rounded-lg appearance-none cursor-pointer
+                    [&::-webkit-slider-thumb]:appearance-none
+                    [&::-webkit-slider-thumb]:w-4
+                    [&::-webkit-slider-thumb]:h-4
+                    [&::-webkit-slider-thumb]:rounded-full
+                    [&::-webkit-slider-thumb]:bg-gradient-to-br
+                    [&::-webkit-slider-thumb]:from-amber-400
+                    [&::-webkit-slider-thumb]:to-amber-600
+                    [&::-webkit-slider-thumb]:shadow-lg
+                    [&::-webkit-slider-thumb]:shadow-amber-500/30
+                    [&::-webkit-slider-thumb]:border-2
+                    [&::-webkit-slider-thumb]:border-amber-300
+                    [&::-webkit-slider-thumb]:transition-transform
+                    [&::-webkit-slider-thumb]:hover:scale-125
+                    [&::-moz-range-thumb]:w-4
+                    [&::-moz-range-thumb]:h-4
+                    [&::-moz-range-thumb]:rounded-full
+                    [&::-moz-range-thumb]:bg-gradient-to-br
+                    [&::-moz-range-thumb]:from-amber-400
+                    [&::-moz-range-thumb]:to-amber-600
+                    [&::-moz-range-thumb]:border-2
+                    [&::-moz-range-thumb]:border-amber-300
+                    [&::-moz-range-thumb]:cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, rgb(251 191 36) 0%, rgb(251 191 36) ${(currentTime / gameDuration) * 100}%, rgb(68 64 60) ${(currentTime / gameDuration) * 100}%, rgb(68 64 60) 100%)`
+                  }}
+                />
+              </div>
+
+              {/* Total duration display */}
+              <span className="text-amber-200/60 font-mono text-sm min-w-[80px] text-right">
+                {formatTime(gameDuration)}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -422,7 +520,11 @@ function App() {
 
         {/* Demo button for testing */}
         <button
-          onClick={() => setViewMode('map')}
+          onClick={() => {
+            setGameDuration(1800) // 30 min demo
+            setCurrentTime(0)
+            setViewMode('map')
+          }}
           className="mt-8 px-6 py-3 text-amber-300/70 hover:text-amber-200 text-sm border border-amber-800/30 hover:border-amber-700/50 rounded-lg transition-colors"
         >
           View Demo Map →

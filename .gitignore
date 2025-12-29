@@ -9,3 +9,7 @@ wheels/
 # Virtual environments
 .venv
 /.idea
+server/archive/explorerecord.ipynb
+server/archive/rec_output.json
+server/archive/rec.aoe2record
+server/archive/test.py

@@ -76,10 +76,11 @@ async def parse_replay(file: UploadFile = File(...)):
             print(f"Currently {len(games.keys())} in global:")
             print(list(games.keys()))
 
-            # Return game ID along with initial state and map size
+            # Return game ID along with initial state, map size, and duration
             return JSONResponse(content={
                 "id": game_id, 
                 "mapSize": game.map_size,
+                "duration": game.duration,
                 "state": game.get_game_state_json(t=0)
             })
         finally:

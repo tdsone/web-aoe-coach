@@ -3,6 +3,18 @@ from typing import Literal, List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from layers.layer_gaia import GaiaLayer
 
+
+def parse_duration(duration_str: str) -> float:
+    """
+    Parse duration string in format 'h:mm:ss.ssssss' to seconds.
+    e.g. '0:29:00.555000' -> 1740.555
+    """
+    parts = duration_str.split(':')
+    hours = int(parts[0])
+    minutes = int(parts[1])
+    seconds = float(parts[2])
+    return hours * 3600 + minutes * 60 + seconds
+
 class Item:
 
     def __init__(self, x: float, y: float, type: str, name: str) -> None:
@@ -33,6 +45,7 @@ class Game:
     def __init__(self, id, parsed_game) -> None:
         self.id = id # globaly unique uuid str
         self.raw = parsed_game
+        self.duration = parse_duration(parsed_game['duration'])  # seconds since start
         self._gaia_layer: Optional[Layer] = None
         self._buildings_layer: Optional[Layer] = None
         # Extract map size from parsed data, default to 120
