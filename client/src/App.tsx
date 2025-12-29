@@ -1,7 +1,8 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { GameMap } from './components/GameMap'
 import { StatsChart } from './components/StatsChart'
-import type { GaiaItem, BuildingItem, GaiaConfig, BuildingConfig, GameStatistics } from './types/game'
+import { StatsPanel } from './components/StatsPanel'
+import type { GaiaItem, BuildingItem, GaiaConfig, BuildingConfig, GameStatistics, PlayerTimeSlice } from './types/game'
 
 type ViewMode = 'upload' | 'map'
 
@@ -24,6 +25,52 @@ function App() {
   const [statistics, setStatistics] = useState<GameStatistics>([])
   const [statsLoading, setStatsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Compute age uptimes for each player
+  const ageUptimes = useMemo(() => {
+    if (!statistics.length) return {}
+
+    const playerIds = [...new Set(statistics.map(s => s.player))].sort()
+    const uptimes: Record<number, { age: string; time: number }[]> = {}
+
+    playerIds.forEach(pid => {
+      const playerStats = statistics
+        .filter(s => s.player === pid)
+        .sort((a, b) => a.t_start - b.t_start)
+
+      const ages: { age: string; time: number }[] = []
+      let lastAge = ''
+
+      playerStats.forEach(stat => {
+        if (stat.current_age !== lastAge) {
+          ages.push({ age: stat.current_age, time: stat.t_start })
+          lastAge = stat.current_age
+        }
+      })
+
+      uptimes[pid] = ages
+    })
+
+    return uptimes
+  }, [statistics])
+
+  // Get current stats slice for each player at current time
+  const currentStats = useMemo(() => {
+    if (!statistics.length) return []
+
+    const playerIds = [...new Set(statistics.map(s => s.player))].sort()
+    return playerIds.map(pid => {
+      const playerStats = statistics
+        .filter(s => s.player === pid)
+        .sort((a, b) => a.t_start - b.t_start)
+
+      // Find the slice containing the current time
+      const slice = playerStats.find(s => s.t_start <= currentTime && s.t_end >= currentTime)
+        || playerStats[playerStats.length - 1] // Fallback to last slice
+
+      return slice
+    }).filter((s): s is PlayerTimeSlice => s !== undefined)
+  }, [statistics, currentTime])
 
   // Fetch configs on mount
   useEffect(() => {
@@ -436,14 +483,20 @@ function App() {
               )}
             </div>
 
-            {/* Chart area - fills remaining space */}
+            {/* Chart area - upper half of remaining space */}
             <div className="flex-1 min-h-0">
               <StatsChart
                 statistics={statistics}
                 currentTime={currentTime}
                 gameDuration={gameDuration || 1}
                 isLoading={statsLoading}
+                ageUptimes={ageUptimes}
               />
+            </div>
+
+            {/* Stats panel - lower half */}
+            <div className="flex-1 min-h-0 border-t border-stone-700/50">
+              <StatsPanel currentStats={currentStats} />
             </div>
           </div>
 
