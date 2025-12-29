@@ -1,4 +1,4 @@
-from typing import Literal, List, Optional, TYPE_CHECKING
+from typing import Literal, List, Optional, TYPE_CHECKING, Dict, Any
 
 if TYPE_CHECKING:
     from layers.layer_gaia import GaiaLayer
@@ -50,6 +50,12 @@ class Game:
         self._buildings_layer: Optional[Layer] = None
         # Extract map size from parsed data, default to 120
         self.map_size = parsed_game.get('map', {}).get('dimension', 120)
+        self.statistics: List[Dict[str, Any]] = []
+
+    def compute_statistics(self):
+        from statistics import prepare_aoe_minimal, compute_all_timeslices
+        prep = prepare_aoe_minimal(self.raw)
+        self.statistics = compute_all_timeslices(prep, window_size=15)
 
     def get_gaia(self, t: float) -> Layer:
         """

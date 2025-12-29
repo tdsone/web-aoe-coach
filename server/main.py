@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import FastAPI, File, UploadFile, Query
+from fastapi import FastAPI, File, UploadFile, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import tempfile
@@ -47,7 +47,7 @@ async def health_check():
 
 
 @app.post("/parse")
-async def parse_replay(file: UploadFile = File(...)):
+async def parse_replay(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     """Parse an .aoe2record file and return game data as JSON."""
     if not file.filename.endswith(".aoe2record"):
         return JSONResponse(
@@ -72,6 +72,9 @@ async def parse_replay(file: UploadFile = File(...)):
             game_id = str(uuid.uuid4())
             game = Game.create_game_from_record(game_id, parsed_data)
             games[game_id] = game
+
+            # Start computing statistics in background
+            background_tasks.add_task(game.compute_statistics)
 
             print(f"Currently {len(games.keys())} in global:")
             print(list(games.keys()))
@@ -101,6 +104,15 @@ async def get_game_state(id: str, t: Optional[float] = Query(None)):
     game: Game = games[id]
     state = game.get_game_state_json(t)
     return JSONResponse(content=state)
+
+
+@app.get("/game/{id}/statistics")
+async def get_game_statistics(id: str):
+    if id not in games:
+        return JSONResponse(content={"error": "Game not found"}, status_code=404)
+
+    game: Game = games[id]
+    return JSONResponse(content=game.statistics)
 
 
 @app.get("/layers/gaia")
