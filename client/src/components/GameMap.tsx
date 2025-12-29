@@ -12,6 +12,18 @@ interface GameMapProps {
 const TILE_SIZE = 4 // Size of each tile in pixels
 const DEFAULT_MAP_SIZE = 120
 
+// Legend items with their display names and colors
+const LEGEND_ITEMS = [
+    { name: 'Gold Mine', label: 'Gold', color: '#ffd700' },
+    { name: 'Stone Mine', label: 'Stone', color: '#9aa0a6' },
+    { name: 'Trees', label: 'Trees', color: '#2e7d32' },
+    { name: 'Forage Bush', label: 'Berries', color: '#4caf50' },
+    { name: 'Sheep', label: 'Sheep', color: '#ffffff' },
+    { name: 'Deer', label: 'Deer', color: '#8b5a2b' },
+    { name: 'Wild Boar', label: 'Boar', color: '#7a1f1f' },
+    { name: 'Relic', label: 'Relic', color: '#00e5ff' },
+]
+
 export function GameMap({ gaiaItems, mapSize = DEFAULT_MAP_SIZE, className }: GameMapProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const appRef = useRef<Application | null>(null)
@@ -176,9 +188,26 @@ export function GameMap({ gaiaItems, mapSize = DEFAULT_MAP_SIZE, className }: Ga
     }, [isReady, render])
 
     return (
-        <div
-            ref={containerRef}
-            className={`absolute inset-0 ${className ?? ''}`}
-        />
+        <>
+            <div
+                ref={containerRef}
+                className={`absolute inset-0 ${className ?? ''}`}
+            />
+            {/* Legend overlay */}
+            <div className="absolute bottom-4 right-4 bg-stone-900/90 backdrop-blur-sm border border-amber-800/40 rounded-lg p-3 shadow-xl">
+                <h3 className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">Resources</h3>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                    {LEGEND_ITEMS.map((item) => (
+                        <div key={item.name} className="flex items-center gap-2">
+                            <div
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: item.color }}
+                            />
+                            <span className="text-amber-100/80 text-xs">{item.label}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </>
     )
 }
