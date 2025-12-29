@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Application, Container, Graphics } from 'pixi.js'
-import type { GaiaItem, BuildingItem } from '../types/game'
-import { getGaiaColor, getBuildingColor } from '../types/game'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
+import { Application, Container, Graphics, Sprite, Assets } from 'pixi.js'
+import type { GaiaItem, BuildingItem, GaiaConfig, BuildingConfig } from '../types/game'
+import { getGaiaItemConfig, getBuildingItemConfig, hexToNumber } from '../types/game'
 
 interface GameMapProps {
     gaiaItems: GaiaItem[]
     buildings: BuildingItem[]
+    gaiaConfig: GaiaConfig
+    buildingConfig: BuildingConfig
     mapSize?: number
     className?: string
 }
@@ -13,32 +15,78 @@ interface GameMapProps {
 const TILE_SIZE = 4 // Size of each tile in pixels
 const DEFAULT_MAP_SIZE = 120
 
-// Legend items with their display names and colors
-const GAIA_LEGEND_ITEMS = [
-    { name: 'Gold Mine', label: 'Gold', color: '#ffd700' },
-    { name: 'Stone Mine', label: 'Stone', color: '#9aa0a6' },
-    { name: 'Trees', label: 'Trees', color: '#2e7d32' },
-    { name: 'Forage Bush', label: 'Berries', color: '#4caf50' },
-    { name: 'Sheep', label: 'Sheep', color: '#ffffff' },
-    { name: 'Deer', label: 'Deer', color: '#8b5a2b' },
-    { name: 'Wild Boar', label: 'Boar', color: '#7a1f1f' },
-    { name: 'Relic', label: 'Relic', color: '#00e5ff' },
-]
-
-const BUILDING_LEGEND_ITEMS = [
-    { name: 'Town Center', label: 'Town Center', color: '#e67e22' },
-    { name: 'House', label: 'House', color: '#cd853f' },
-    { name: 'Barracks', label: 'Barracks', color: '#c0392b' },
-    { name: 'Mill', label: 'Mill', color: '#f4d03f' },
-    { name: 'Lumber Camp', label: 'Lumber Camp', color: '#784212' },
-    { name: 'Mining Camp', label: 'Mining Camp', color: '#5d6d7e' },
-]
-
-export function GameMap({ gaiaItems, buildings, mapSize = DEFAULT_MAP_SIZE, className }: GameMapProps) {
+export function GameMap({ gaiaItems, buildings, gaiaConfig, buildingConfig, mapSize = DEFAULT_MAP_SIZE, className }: GameMapProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const appRef = useRef<Application | null>(null)
     const mapContainerRef = useRef<Container | null>(null)
     const [isReady, setIsReady] = useState(false)
+    const [loadedIcons, setLoadedIcons] = useState<Record<string, boolean>>({})
+
+    // Compute visible gaia items from config
+    const visibleGaiaItems = useMemo(() => {
+        return gaiaItems.filter(item => {
+            const config = getGaiaItemConfig(gaiaConfig, item.name)
+            return config.show
+        })
+    }, [gaiaItems, gaiaConfig])
+
+    // Compute visible buildings from config
+    const visibleBuildings = useMemo(() => {
+        return buildings.filter(building => {
+            const config = getBuildingItemConfig(buildingConfig, building.name)
+            return config.show
+        })
+    }, [buildings, buildingConfig])
+
+    // Generate legend items from config (only items that are shown)
+    const gaiaLegendItems = useMemo(() => {
+        const uniqueNames = new Set(visibleGaiaItems.map(item => item.name))
+        return gaiaConfig.items
+            .filter(item => item.show && uniqueNames.has(item.name))
+            .map(item => ({
+                name: item.name,
+                label: item.name,
+                color: item.color,
+            }))
+    }, [gaiaConfig, visibleGaiaItems])
+
+    const buildingLegendItems = useMemo(() => {
+        const uniqueNames = new Set(visibleBuildings.map(b => b.name))
+        return buildingConfig.items
+            .filter(item => item.show && uniqueNames.has(item.building))
+            .map(item => ({
+                name: item.building,
+                label: item.building,
+                icon: item.icon,
+            }))
+    }, [buildingConfig, visibleBuildings])
+
+    // Preload building icons
+    useEffect(() => {
+        const loadIcons = async () => {
+            const iconPromises: Promise<void>[] = []
+            const loaded: Record<string, boolean> = {}
+
+            for (const item of buildingConfig.items) {
+                if (item.icon) {
+                    const promise = Assets.load(item.icon)
+                        .then(() => {
+                            loaded[item.building] = true
+                        })
+                        .catch((err) => {
+                            console.warn(`Failed to load icon for ${item.building}:`, err)
+                            loaded[item.building] = false
+                        })
+                    iconPromises.push(promise)
+                }
+            }
+
+            await Promise.all(iconPromises)
+            setLoadedIcons(loaded)
+        }
+
+        loadIcons()
+    }, [buildingConfig])
 
     // Calculate scale and position to fit map in container
     const updateScale = useCallback(() => {
@@ -67,7 +115,7 @@ export function GameMap({ gaiaItems, buildings, mapSize = DEFAULT_MAP_SIZE, clas
     }, [mapSize])
 
     // Render the grid and items
-    const render = useCallback(() => {
+    const render = useCallback(async () => {
         const app = appRef.current
         if (!app) return
 
@@ -115,11 +163,12 @@ export function GameMap({ gaiaItems, buildings, mapSize = DEFAULT_MAP_SIZE, clas
         gridGraphics.stroke()
         mapContainer.addChild(gridGraphics)
 
-        // Draw gaia items
+        // Draw gaia items (only visible ones)
         const itemsGraphics = new Graphics()
 
-        for (const item of gaiaItems) {
-            const color = getGaiaColor(item.name)
+        for (const item of visibleGaiaItems) {
+            const config = getGaiaItemConfig(gaiaConfig, item.name)
+            const color = hexToNumber(config.color)
 
             // Convert game coordinates to screen coordinates
             const screenX = item.x * TILE_SIZE
@@ -131,7 +180,7 @@ export function GameMap({ gaiaItems, buildings, mapSize = DEFAULT_MAP_SIZE, clas
                 radius = TILE_SIZE * 0.3
             } else if (item.name === 'Gold Mine' || item.name === 'Stone Mine') {
                 radius = TILE_SIZE * 0.6
-            } else if (item.name === 'Wild Boar') {
+            } else if (item.name === 'Wild Boar' || item.name === 'Javelina') {
                 radius = TILE_SIZE * 0.5
             }
 
@@ -143,43 +192,61 @@ export function GameMap({ gaiaItems, buildings, mapSize = DEFAULT_MAP_SIZE, clas
 
         mapContainer.addChild(itemsGraphics)
 
-        // Draw buildings
-        const buildingsGraphics = new Graphics()
+        // Draw buildings (only visible ones) - using icons
+        const buildingsContainer = new Container()
+        const iconSize = buildingConfig.defaults.icon_size * mapWidth
 
-        for (const building of buildings) {
-            const color = getBuildingColor(building.name)
+        for (const building of visibleBuildings) {
+            const config = getBuildingItemConfig(buildingConfig, building.name)
 
             // Convert game coordinates to screen coordinates
             const screenX = building.x * TILE_SIZE
             const screenY = building.y * TILE_SIZE
 
-            // Size based on building type
-            let size = TILE_SIZE * 1.5
-            if (building.name === 'Town Center') {
-                size = TILE_SIZE * 2
-            } else if (building.name === 'House') {
-                size = TILE_SIZE * 1
-            } else if (building.name === 'Castle') {
-                size = TILE_SIZE * 2.5
+            if (config.icon && loadedIcons[building.name]) {
+                try {
+                    const texture = await Assets.load(config.icon)
+                    const sprite = new Sprite(texture)
+                    sprite.anchor.set(0.5)
+                    sprite.x = screenX
+                    sprite.y = screenY
+                    sprite.width = iconSize
+                    sprite.height = iconSize
+                    buildingsContainer.addChild(sprite)
+                } catch {
+                    // Fallback to square if icon fails
+                    const fallbackGraphics = new Graphics()
+                    const size = TILE_SIZE * 1.5
+                    fallbackGraphics.fill({ color: 0xa04000, alpha: 0.9 })
+                    fallbackGraphics.rect(screenX - size / 2, screenY - size / 2, size, size)
+                    fallbackGraphics.fill()
+                    buildingsContainer.addChild(fallbackGraphics)
+                }
+            } else {
+                // Draw building as a colored square if no icon
+                const fallbackGraphics = new Graphics()
+                let size = TILE_SIZE * 1.5
+                if (building.name === 'Town Center') {
+                    size = TILE_SIZE * 2
+                } else if (building.name === 'House') {
+                    size = TILE_SIZE * 1
+                }
+                fallbackGraphics.fill({ color: 0xa04000, alpha: 0.9 })
+                fallbackGraphics.rect(screenX - size / 2, screenY - size / 2, size, size)
+                fallbackGraphics.fill()
+                fallbackGraphics.stroke({ color: 0x000000, width: 1, alpha: 0.5 })
+                fallbackGraphics.rect(screenX - size / 2, screenY - size / 2, size, size)
+                fallbackGraphics.stroke()
+                buildingsContainer.addChild(fallbackGraphics)
             }
-
-            // Draw building as a filled square with border
-            buildingsGraphics.fill({ color: color, alpha: 0.9 })
-            buildingsGraphics.rect(screenX - size / 2, screenY - size / 2, size, size)
-            buildingsGraphics.fill()
-
-            // Add border
-            buildingsGraphics.stroke({ color: 0x000000, width: 1, alpha: 0.5 })
-            buildingsGraphics.rect(screenX - size / 2, screenY - size / 2, size, size)
-            buildingsGraphics.stroke()
         }
 
-        mapContainer.addChild(buildingsGraphics)
+        mapContainer.addChild(buildingsContainer)
 
         // Apply scaling
         updateScale()
 
-    }, [gaiaItems, buildings, mapSize, updateScale])
+    }, [visibleGaiaItems, visibleBuildings, gaiaConfig, buildingConfig, mapSize, updateScale, loadedIcons])
 
     // Initialize PixiJS application
     useEffect(() => {
@@ -245,31 +312,44 @@ export function GameMap({ gaiaItems, buildings, mapSize = DEFAULT_MAP_SIZE, clas
             />
             {/* Legend overlay */}
             <div className="absolute bottom-4 right-4 bg-stone-900/90 backdrop-blur-sm border border-amber-800/40 rounded-lg p-3 shadow-xl max-h-80 overflow-y-auto">
-                <h3 className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">Resources</h3>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                    {GAIA_LEGEND_ITEMS.map((item) => (
-                        <div key={item.name} className="flex items-center gap-2">
-                            <div
-                                className="w-3 h-3 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: item.color }}
-                            />
-                            <span className="text-amber-100/80 text-xs">{item.label}</span>
+                {gaiaLegendItems.length > 0 && (
+                    <>
+                        <h3 className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">Resources</h3>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                            {gaiaLegendItems.map((item) => (
+                                <div key={item.name} className="flex items-center gap-2">
+                                    <div
+                                        className="w-3 h-3 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: item.color }}
+                                    />
+                                    <span className="text-amber-100/80 text-xs">{item.label}</span>
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
-                <div className="border-t border-amber-800/30 my-2" />
-                <h3 className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">Buildings</h3>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                    {BUILDING_LEGEND_ITEMS.map((item) => (
-                        <div key={item.name} className="flex items-center gap-2">
-                            <div
-                                className="w-3 h-3 flex-shrink-0"
-                                style={{ backgroundColor: item.color }}
-                            />
-                            <span className="text-amber-100/80 text-xs">{item.label}</span>
+                    </>
+                )}
+                {buildingLegendItems.length > 0 && (
+                    <>
+                        {gaiaLegendItems.length > 0 && <div className="border-t border-amber-800/30 my-2" />}
+                        <h3 className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-2">Buildings</h3>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                            {buildingLegendItems.map((item) => (
+                                <div key={item.name} className="flex items-center gap-2">
+                                    {item.icon ? (
+                                        <img
+                                            src={item.icon}
+                                            alt={item.label}
+                                            className="w-4 h-4 flex-shrink-0 object-contain"
+                                        />
+                                    ) : (
+                                        <div className="w-3 h-3 flex-shrink-0 bg-amber-700" />
+                                    )}
+                                    <span className="text-amber-100/80 text-xs">{item.label}</span>
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </>
+                )}
             </div>
         </>
     )

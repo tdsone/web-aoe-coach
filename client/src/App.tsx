@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { GameMap } from './components/GameMap'
-import type { GaiaItem, BuildingItem } from './types/game'
+import type { GaiaItem, BuildingItem, GaiaConfig, BuildingConfig } from './types/game'
 
 type ViewMode = 'upload' | 'map'
 
@@ -14,7 +14,40 @@ function App() {
   const [isDragging, setIsDragging] = useState(false)
   const [fileName, setFileName] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('upload')
+  const [gaiaConfig, setGaiaConfig] = useState<GaiaConfig | null>(null)
+  const [buildingConfig, setBuildingConfig] = useState<BuildingConfig | null>(null)
+  const [configLoading, setConfigLoading] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Fetch configs on mount
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      try {
+        const [gaiaRes, buildingRes] = await Promise.all([
+          fetch('http://localhost:8000/config/gaia'),
+          fetch('http://localhost:8000/config/buildings'),
+        ])
+
+        if (!gaiaRes.ok) throw new Error('Failed to fetch gaia config')
+        if (!buildingRes.ok) throw new Error('Failed to fetch buildings config')
+
+        const [gaiaData, buildingData] = await Promise.all([
+          gaiaRes.json(),
+          buildingRes.json(),
+        ])
+
+        setGaiaConfig(gaiaData)
+        setBuildingConfig(buildingData)
+      } catch (err) {
+        console.error('Error fetching configs:', err)
+        setError(err instanceof Error ? err.message : 'Failed to fetch configs')
+      } finally {
+        setConfigLoading(false)
+      }
+    }
+
+    fetchConfigs()
+  }, [])
 
   const fetchGaiaLayer = useCallback(async (id: string, t: number = 0) => {
     try {
@@ -223,6 +256,30 @@ function App() {
     }
   }, [viewMode, gaiaItems.length, gameId])
 
+  // Show loading state while configs are loading
+  if (configLoading) {
+    return (
+      <div className="h-screen w-screen bg-gradient-to-br from-stone-950 via-stone-900 to-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-amber-200">Loading configuration...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Configs must be loaded before proceeding
+  if (!gaiaConfig || !buildingConfig) {
+    return (
+      <div className="h-screen w-screen bg-gradient-to-br from-stone-950 via-stone-900 to-slate-950 flex items-center justify-center">
+        <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-6 max-w-md">
+          <p className="text-red-300 text-center">Failed to load configuration. Please refresh the page.</p>
+          {error && <p className="text-red-400 text-sm mt-2 text-center">{error}</p>}
+        </div>
+      </div>
+    )
+  }
+
   if (viewMode === 'map') {
     return (
       <div className="h-screen w-screen bg-gradient-to-br from-stone-950 via-stone-900 to-slate-950 flex flex-col">
@@ -255,6 +312,8 @@ function App() {
           <GameMap
             gaiaItems={gaiaItems}
             buildings={buildings}
+            gaiaConfig={gaiaConfig}
+            buildingConfig={buildingConfig}
             mapSize={mapSize}
             className="w-full h-full"
           />

@@ -17,55 +17,61 @@ export interface GameState {
     buildings: BuildingItem[]
 }
 
-// Color mapping for buildings
-export const BUILDING_COLORS: Record<string, number> = {
-    'Town Center': 0xe67e22,
-    'House': 0xcd853f,
-    'Barracks': 0xc0392b,
-    'Archery Range': 0x8e44ad,
-    'Stable': 0x27ae60,
-    'Blacksmith': 0x7f8c8d,
-    'Market': 0xf39c12,
-    'Monastery': 0x9b59b6,
-    'Castle': 0x34495e,
-    'University': 0x2980b9,
-    'Siege Workshop': 0x6c3483,
-    'Mill': 0xf4d03f,
-    'Lumber Camp': 0x784212,
-    'Mining Camp': 0x5d6d7e,
-    'Farm': 0x82e0aa,
-    'Dock': 0x5dade2,
-    'Watch Tower': 0x99a3a4,
-    'Guard Tower': 0x7b7d7d,
-    'Keep': 0x566573,
-    'Bombard Tower': 0x2c3e50,
-    'default': 0xa04000,
+// Gaia config types
+export interface GaiaConfigItem {
+    name: string
+    show: boolean
+    color: string
 }
 
-export const getBuildingColor = (name: string): number => {
-    return BUILDING_COLORS[name] ?? BUILDING_COLORS['default']
-}
-
-// Color mapping for gaia items
-export const GAIA_COLORS: Record<string, number> = {
-    'Gold Mine': 0xffd700,
-    'Stone Mine': 0x9aa0a6,
-    'Tree (Oak Forest)': 0x2e7d32,
-    'Tree (Oak Autumn)': 0x8b4513,
-    'Tree (Bamboo Forest)': 0x228b22,
-    'Sheep': 0xffffff,
-    'Deer': 0x8b5a2b,
-    'Wild Boar': 0x7a1f1f,
-    'Relic': 0x00e5ff,
-    'Forage Bush': 0x4caf50,
-    'default': 0x666666,
-}
-
-export const getGaiaColor = (name: string): number => {
-    // Check for tree types
-    if (name.toLowerCase().includes('tree')) {
-        return 0x2e7d32
+export interface GaiaConfig {
+    defaults: {
+        show: boolean
+        color: string
     }
-    return GAIA_COLORS[name] ?? GAIA_COLORS['default']
+    items: GaiaConfigItem[]
 }
 
+// Building config types
+export interface BuildingConfigItem {
+    building: string
+    show: boolean
+    icon: string
+}
+
+export interface BuildingConfig {
+    defaults: {
+        show: boolean
+        shape: number
+        size: number
+        icon: string
+        icon_size: number
+        outline_shape: number
+        outline_size: number
+        outline_stroke: number
+    }
+    items: BuildingConfigItem[]
+}
+
+// Helper to get gaia config for an item - throws if not found
+export function getGaiaItemConfig(config: GaiaConfig, name: string): GaiaConfigItem {
+    const item = config.items.find(i => i.name === name)
+    if (!item) {
+        throw new Error(`No gaia config found for item: "${name}". Please add it to server/config/gaia.json`)
+    }
+    return item
+}
+
+// Helper to get building config for an item - throws if not found
+export function getBuildingItemConfig(config: BuildingConfig, name: string): BuildingConfigItem {
+    const item = config.items.find(i => i.building === name)
+    if (!item) {
+        throw new Error(`No building config found for: "${name}". Please add it to server/config/buildings.json`)
+    }
+    return item
+}
+
+// Convert hex color string to number for PixiJS
+export function hexToNumber(hex: string): number {
+    return parseInt(hex.replace('#', ''), 16)
+}

@@ -5,9 +5,21 @@ from fastapi.responses import JSONResponse
 import tempfile
 import os
 import uuid
+import json
+from pathlib import Path
 
 from mgz.model import parse_match, serialize
 from game import Game
+
+# Load config files
+CONFIG_DIR = Path(__file__).parent / "config"
+
+def load_config(filename: str) -> dict:
+    with open(CONFIG_DIR / filename, "r") as f:
+        return json.load(f)
+
+GAIA_CONFIG = load_config("gaia.json")
+BUILDINGS_CONFIG = load_config("buildings.json")
 
 app = FastAPI(title="AoE2 Replay Parser API", version="1.0.0")
 
@@ -114,6 +126,18 @@ async def get_buildings_layer(id: str, t: float = 0):
     game: Game = games[id]
     buildings_layer = game.get_buildings(t)
     return JSONResponse(content=[item.to_dict() for item in buildings_layer.items])
+
+
+@app.get("/config/gaia")
+async def get_gaia_config():
+    """Return gaia display configuration."""
+    return JSONResponse(content=GAIA_CONFIG)
+
+
+@app.get("/config/buildings")
+async def get_buildings_config():
+    """Return buildings display configuration."""
+    return JSONResponse(content=BUILDINGS_CONFIG)
 
 
 if __name__ == "__main__":
