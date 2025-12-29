@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Application, Graphics } from 'pixi.js'
+import { Application, Container, Graphics } from 'pixi.js'
 import type { GaiaItem } from '../types/game'
 import { getGaiaColor } from '../types/game'
 
@@ -15,7 +15,34 @@ const DEFAULT_MAP_SIZE = 120
 export function GameMap({ gaiaItems, mapSize = DEFAULT_MAP_SIZE, className }: GameMapProps) {
     const containerRef = useRef<HTMLDivElement>(null)
     const appRef = useRef<Application | null>(null)
+    const mapContainerRef = useRef<Container | null>(null)
     const [isReady, setIsReady] = useState(false)
+
+    // Calculate scale and position to fit map in container
+    const updateScale = useCallback(() => {
+        const app = appRef.current
+        const mapContainer = mapContainerRef.current
+        if (!app || !mapContainer) return
+
+        const mapWidth = mapSize * TILE_SIZE
+        const mapHeight = mapSize * TILE_SIZE
+
+        const screenWidth = app.screen.width
+        const screenHeight = app.screen.height
+
+        // Calculate scale to fit (use the smaller ratio to maintain aspect ratio)
+        const scaleX = screenWidth / mapWidth
+        const scaleY = screenHeight / mapHeight
+        const scale = Math.min(scaleX, scaleY)
+
+        mapContainer.scale.set(scale)
+
+        // Center the map
+        const scaledWidth = mapWidth * scale
+        const scaledHeight = mapHeight * scale
+        mapContainer.x = (screenWidth - scaledWidth) / 2
+        mapContainer.y = (screenHeight - scaledHeight) / 2
+    }, [mapSize])
 
     // Render the grid and items
     const render = useCallback(() => {
@@ -24,6 +51,11 @@ export function GameMap({ gaiaItems, mapSize = DEFAULT_MAP_SIZE, className }: Ga
 
         // Clear previous graphics
         app.stage.removeChildren()
+
+        // Create a container for the map that we can scale
+        const mapContainer = new Container()
+        mapContainerRef.current = mapContainer
+        app.stage.addChild(mapContainer)
 
         const mapWidth = mapSize * TILE_SIZE
         const mapHeight = mapSize * TILE_SIZE
@@ -52,7 +84,7 @@ export function GameMap({ gaiaItems, mapSize = DEFAULT_MAP_SIZE, className }: Ga
         }
 
         gridGraphics.stroke()
-        app.stage.addChild(gridGraphics)
+        mapContainer.addChild(gridGraphics)
 
         // Draw gaia items
         const itemsGraphics = new Graphics()
@@ -80,9 +112,12 @@ export function GameMap({ gaiaItems, mapSize = DEFAULT_MAP_SIZE, className }: Ga
             itemsGraphics.fill()
         }
 
-        app.stage.addChild(itemsGraphics)
+        mapContainer.addChild(itemsGraphics)
 
-    }, [gaiaItems, mapSize])
+        // Apply scaling
+        updateScale()
+
+    }, [gaiaItems, mapSize, updateScale])
 
     // Initialize PixiJS application
     useEffect(() => {
@@ -112,18 +147,26 @@ export function GameMap({ gaiaItems, mapSize = DEFAULT_MAP_SIZE, className }: Ga
 
             container.appendChild(app.canvas)
             appRef.current = app
+
+            // Handle resize
+            const handleResize = () => {
+                updateScale()
+            }
+            window.addEventListener('resize', handleResize)
+
             setIsReady(true)
         }
 
         initApp()
 
         return () => {
+            window.removeEventListener('resize', updateScale)
             if (appRef.current) {
                 appRef.current.destroy(true, { children: true })
                 appRef.current = null
             }
         }
-    }, [])
+    }, [updateScale])
 
     // Re-render when data changes or app becomes ready
     useEffect(() => {
@@ -133,11 +176,9 @@ export function GameMap({ gaiaItems, mapSize = DEFAULT_MAP_SIZE, className }: Ga
     }, [isReady, render])
 
     return (
-        <div className={`${className ?? ''}`}>
-            <div
-                ref={containerRef}
-                className="w-full h-full"
-            />
-        </div>
+        <div
+            ref={containerRef}
+            className={`absolute inset-0 ${className ?? ''}`}
+        />
     )
 }
