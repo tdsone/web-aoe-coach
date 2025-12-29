@@ -1,9 +1,11 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { GameMap } from './components/GameMap'
-import type { GaiaItem, BuildingItem, GaiaConfig, BuildingConfig } from './types/game'
+import { StatsChart } from './components/StatsChart'
+import { StatsPanel } from './components/StatsPanel'
+import type { GaiaItem, BuildingItem, GaiaConfig, BuildingConfig, GameStatistics, PlayerTimeSlice } from './types/game'
 import JSZip from 'jszip'
 
-type ViewMode = 'select' | 'map'
+type ViewMode = 'upload' | 'map'
 type InputMode = 'upload' | 'matches'
 
 interface User {
@@ -85,11 +87,6 @@ const CIVILIZATION_MAP: Record<number, string> = {
 const getCivilizationName = (civilizationID: number): string => {
   return CIVILIZATION_MAP[civilizationID] || `Unknown (${civilizationID})`
 }
-import { StatsChart } from './components/StatsChart'
-import { StatsPanel } from './components/StatsPanel'
-import type { GaiaItem, BuildingItem, GaiaConfig, BuildingConfig, GameStatistics, PlayerTimeSlice } from './types/game'
-
-type ViewMode = 'upload' | 'map'
 
 function App() {
   const [gameId, setGameId] = useState<string | null>(null)
@@ -102,7 +99,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<ViewMode>('select')
+  const [viewMode, setViewMode] = useState<ViewMode>('upload')
   const [gaiaConfig, setGaiaConfig] = useState<GaiaConfig | null>(null)
   const [buildingConfig, setBuildingConfig] = useState<BuildingConfig | null>(null)
   const [configLoading, setConfigLoading] = useState(true)
@@ -479,7 +476,7 @@ function App() {
     setStatistics([])
     setFileName(null)
     setError(null)
-    setViewMode('select')
+    setViewMode('upload')
     setSelectedUser(null)
     setSelectedMatch(null)
     setMatches([])
