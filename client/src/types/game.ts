@@ -75,3 +75,27 @@ export function getBuildingItemConfig(config: BuildingConfig, name: string): Bui
 export function hexToNumber(hex: string): number {
     return parseInt(hex.replace('#', ''), 16)
 }
+
+// Statistics types
+export interface PlayerTimeSlice {
+    player: number
+    player_name: string
+    eapm: number
+    t_start: number
+    t_end: number
+    actions_in_window: number
+    n_units_moved_in_window: number
+    scout_activity_in_window: number
+    total_unit_count: number
+    total_building_count: number
+    current_age: string
+    resource_count: number | null
+    total_objects_snapshot: number | null
+    all_buildings_existing: string
+    all_research_existing: string[]
+    all_units_existing: number[]
+    // Dynamic action type counts
+    [key: `actions_in_window_${string}`]: number
+}
+
+export type GameStatistics = PlayerTimeSlice[]
