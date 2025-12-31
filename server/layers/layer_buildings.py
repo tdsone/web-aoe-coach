@@ -77,7 +77,10 @@ class BuildingLayer(Layer):
         
         # 1. Starting Town Centers from players' objects
         players = raw_data.get('players', [])
-        for p in players:
+        for i, p in enumerate(players):
+            if type(p) != dict:
+                continue
+            print(f"Player {i}")
             player_num = p.get('number')
             objs = p.get('objects', [])
             tcs = [o for o in objs if o.get('name') == "Town Center"]
