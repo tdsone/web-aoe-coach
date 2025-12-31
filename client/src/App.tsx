@@ -458,13 +458,16 @@ function App() {
           fetchBuildingsLayer(data.id, 0),
         ])
         setViewMode('map')
+
+        // Fetch statistics after a short delay (computed in background)
+        setTimeout(() => fetchStatistics(data.id), 1000)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setIsLoadingReplay(false)
     }
-  }, [selectedUser, fetchGaiaLayer, fetchBuildingsLayer])
+  }, [selectedUser, fetchGaiaLayer, fetchBuildingsLayer, fetchStatistics])
 
   const handleReset = () => {
     setGameId(null)
