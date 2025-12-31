@@ -68,6 +68,62 @@ async def parse_replay(background_tasks: BackgroundTasks, file: UploadFile = Fil
                 match = parse_match(f)
                 parsed_data = serialize(match)
 
+            # INSERT_YOUR_CODE
+
+            # Utility to flatten nested players from any arbitrary structure
+            def flatten_players(data):
+                """Recursively collect all player dicts, skipping numeric values/lists."""
+                players = []
+                if isinstance(data, dict):
+                    # If it looks like a player (has "number" and "name"), add it
+                    if "number" in data and "name" in data:
+                        # Avoid messing up the team key, fix inside this dict's team value
+                        player_copy = data.copy()
+                        if "team" in player_copy:
+                            player_copy["team"] = flatten_team(player_copy["team"])
+                        players.append(player_copy)
+                    else:
+                        # recurse into dict values
+                        for v in data.values():
+                            players.extend(flatten_players(v))
+                elif isinstance(data, list):
+                    for item in data:
+                        players.extend(flatten_players(item))
+                return players
+
+            # Utility to flatten team arrays so that all values are just numbers (remove nested players)
+            def flatten_team(team):
+                res = []
+                if isinstance(team, list):
+                    for item in team:
+                        if isinstance(item, (int, float)):
+                            res.append(item)
+                        elif isinstance(item, dict):
+                            # if this is a player nested in team, just take the number
+                            if "number" in item:
+                                res.append(item["number"])
+                        elif isinstance(item, list):
+                            res.extend(flatten_team(item))
+                elif isinstance(team, dict):
+                    # very unlikely, but just in case, treat as player
+                    if "number" in team:
+                        res.append(team["number"])
+                elif isinstance(team, (int, float)):
+                    res.append(team)
+                return res
+
+            # Flatten the player structure
+            if "players" in parsed_data:
+                parsed_data["players"] = flatten_players(parsed_data["players"])
+
+
+            for player in parsed_data.get("players", []):
+                team = player.get("team")
+                if isinstance(team, list):
+                    for idx, item in enumerate(team):
+                        if not isinstance(item, (int, float)):
+                            print(f"Non-numeric team item at index {idx}")
+
             # Generate a new UUID and store the parsed data
             game_id = str(uuid.uuid4())
             game = Game.create_game_from_record(game_id, parsed_data)
